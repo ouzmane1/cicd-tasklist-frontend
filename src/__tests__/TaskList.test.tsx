@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TaskList } from '../components/TaskList';
 import type { Task } from '../types/task';
@@ -55,5 +55,97 @@ describe('TaskList', () => {
 		expect(screen.getByText('2 tâches')).toBeInTheDocument();
 	});
 
-	// ... TODO: Add more tests
+	it('shows empty state when no tasks', () => {
+		render(
+			<TaskList
+				tasks={[]}
+				loading={false}
+				error={null}
+				onToggle={vi.fn()}
+				onDelete={vi.fn()}
+				onEdit={vi.fn()}
+			/>
+		);
+		expect(screen.getByTestId('empty')).toBeInTheDocument();
+		expect(screen.getByText('Aucune tâche')).toBeInTheDocument();
+	});
+
+	it('shows error state when error is provided', () => {
+		render(
+			<TaskList
+				tasks={[]}
+				loading={false}
+				error="Erreur de connexion"
+				onToggle={vi.fn()}
+				onDelete={vi.fn()}
+				onEdit={vi.fn()}
+			/>
+		);
+		expect(screen.getByTestId('error')).toBeInTheDocument();
+		expect(screen.getByText('Erreur : Erreur de connexion')).toBeInTheDocument();
+	});
+
+	it('displays completed task count correctly', () => {
+		render(
+			<TaskList
+				tasks={mockTasks}
+				loading={false}
+				error={null}
+				onToggle={vi.fn()}
+				onDelete={vi.fn()}
+				onEdit={vi.fn()}
+			/>
+		);
+		expect(screen.getByText('1 terminée')).toBeInTheDocument();
+	});
+
+	it('calls onToggle when checkbox is clicked', () => {
+		const onToggle = vi.fn();
+		render(
+			<TaskList
+				tasks={[mockTasks[0]]}
+				loading={false}
+				error={null}
+				onToggle={onToggle}
+				onDelete={vi.fn()}
+				onEdit={vi.fn()}
+			/>
+		);
+		const checkbox = screen.getByRole('checkbox');
+		fireEvent.click(checkbox);
+		expect(onToggle).toHaveBeenCalledWith(1);
+	});
+
+	it('calls onDelete when delete button is clicked twice (confirmation)', () => {
+		const onDelete = vi.fn();
+		render(
+			<TaskList
+				tasks={[mockTasks[0]]}
+				loading={false}
+				error={null}
+				onToggle={vi.fn()}
+				onDelete={onDelete}
+				onEdit={vi.fn()}
+			/>
+		);
+		const deleteBtn = screen.getByTitle('Supprimer');
+		fireEvent.click(deleteBtn);
+		fireEvent.click(deleteBtn);
+		expect(onDelete).toHaveBeenCalledWith(1);
+	});
+
+	it('does not show loading and task-list at the same time', () => {
+		render(
+			<TaskList
+				tasks={mockTasks}
+				loading={true}
+				error={null}
+				onToggle={vi.fn()}
+				onDelete={vi.fn()}
+				onEdit={vi.fn()}
+			/>
+		);
+		expect(screen.getByTestId('loading')).toBeInTheDocument();
+		expect(screen.queryByTestId('task-list')).not.toBeInTheDocument();
+	});
 });
